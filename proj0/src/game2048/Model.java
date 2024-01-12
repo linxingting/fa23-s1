@@ -93,7 +93,13 @@ public class Model {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
-
+        for (int col = 0; col < b.size(); col++){
+            for (int row = 0; row < b.size(); row++){
+                if (b.tile(col, row) == null){
+                    return true;
+                }
+            }
+        }
 
         return false;
     }
@@ -105,7 +111,15 @@ public class Model {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
-
+        for (int col = 0; col < b.size(); col++){
+            for (int row = 0; row < b.size(); row++){
+                if (b.tile(col, row) != null){
+                    if (b.tile(col, row).value() == MAX_PIECE) {
+                        return true;
+                    }
+                }
+            }
+        }
 
         return false;
     }
@@ -118,7 +132,32 @@ public class Model {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        // case 1: when there is at least one empty space on the board.
+        if (emptySpaceExists(b)){
+            return true;
+        }
 
+        // case 2a: if there are two adjacent tiles in the same row with the same value
+        for (int col = 0; col < b.size()-1; col++){
+            for (int row = 0; row < b.size(); row++){
+                if ((b.tile(col, row) != null) && (b.tile(col+1, row) != null)){
+                    if (b.tile(col, row).value() == b.tile(col+1, row).value()) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // case 2b: if there are two adjacent tiles in the same column with the same value
+        for (int col = 0; col < b.size(); col++){
+            for (int row = 0; row < b.size()-1; row++){
+                if ((b.tile(col, row) != null) && (b.tile(col, row+1) != null)){
+                    if (b.tile(col, row).value() == b.tile(col, row+1).value()) {
+                        return true;
+                    }
+                }
+            }
+        }
 
         return false;
     }
