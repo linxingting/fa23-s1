@@ -14,6 +14,11 @@ public class Model {
     /** Maximum score so far.  Updated when game ends. */
     private int maxScore;
 
+    /** A 2D array to track whether certain tile has had merge happened or not.
+     *  All values initialized to false by default.
+     *  Gets reset after every Tilt action. */
+    private boolean[][] flags;
+
     /* Coordinate System: column C, row R of the board (where row 0,
      * column 0 is the lower-left corner of the board) will correspond
      * to board.tile(c, r).  Be careful! It works like (x, y) coordinates.
@@ -27,6 +32,7 @@ public class Model {
     public Model(int size) {
         board = new Board(size);
         score = maxScore = 0;
+        flags = new boolean[board.size()][board.size()];
     }
 
     /** A new 2048 game where RAWVALUES contain the values of the tiles
@@ -36,7 +42,9 @@ public class Model {
         board = new Board(rawValues);
         this.score = score;
         this.maxScore = maxScore;
+        flags = new boolean[board.size()][board.size()];
     }
+
 
     /** Return the current Tile at (COL, ROW), where 0 <= ROW < size(),
      *  0 <= COL < size(). Returns null if there is no tile there.
@@ -49,6 +57,7 @@ public class Model {
     public int size() {
         return board.size();
     }
+
 
     /** Return the current score. */
     public int score() {
@@ -137,7 +146,7 @@ public class Model {
             return true;
         }
 
-        // case 2a: if there are two adjacent tiles in the same row with the same value
+        // case 2a: if there are two adjacent tiles in the same ROW with the same value
         for (int col = 0; col < b.size()-1; col++){
             for (int row = 0; row < b.size(); row++){
                 if ((b.tile(col, row) != null) && (b.tile(col+1, row) != null)){
@@ -148,11 +157,11 @@ public class Model {
             }
         }
 
-        // case 2b: if there are two adjacent tiles in the same column with the same value
+        // case 2b: if there are two adjacent tiles in the same COLUMN with the same value
         for (int col = 0; col < b.size(); col++){
             for (int row = 0; row < b.size()-1; row++){
                 if ((b.tile(col, row) != null) && (b.tile(col, row+1) != null)){
-                    if (b.tile(col, row).value() == b.tile(col, row+1).value()) {
+                    if (b.tile(col, row).value() == b.tile(col, row+1 ).value()) {
                         return true;
                     }
                 }
@@ -163,7 +172,7 @@ public class Model {
     }
 
     /** Tilt the board toward SIDE.
-     *
+
      * 1. If two Tile objects are adjacent in the direction of motion and have
      *    the same value, they are merged into one Tile of twice the original
      *    value and that new value is added to the score instance variable
@@ -177,11 +186,71 @@ public class Model {
     public void tilt(Side side) {
         // TODO: Modify this.board (and if applicable, this.score) to account
         // for the tilt to the Side SIDE.
+        board.setViewingPerspective(side);
+        for (int col = 0; col < board.size(); col++) {
+            columnHandler(col);
+        }
+        board.setViewingPerspective(Side.NORTH);
 
-
+        mergedReset();
         checkGameOver();
     }
 
+    /** Each column is handled in the same way. All the tiles within the column
+     * (except the top one) will be handled in a top-down approach. */
+    public void columnHandler(int col) {
+        for (int row = board.size()-2; row >= 0; row--) {
+            if (tile(col, row) != null) {
+                tileHandler(col, row);
+            }
+        }
+    }
+
+    /** For each tile, we should look at the very top row, and see if it can
+     *  fit there. If not, go down until we reach the tile itself.
+
+     *  Three scenarios:
+     *  1. If the new place is null, then move the tile there.
+     *  2. If the new place has the same value, and has never been merged before,
+     *     then move the tile there.
+     *  3. Otherwise, we look at 1 row lower. (since the new place has been
+     *     occupied, and there is no way to move the tile there.)*/
+    public void tileHandler(int col, int row) {
+        Tile tile = board.tile(col, row);
+        boolean flag = false;
+        int new_row;
+        for (new_row = board.size() - 1; new_row > row; new_row--) {
+            Tile destination = board.tile(col, new_row);
+            if (destination == null) {
+                flag = board.move(col, new_row, tile);
+                break;
+            } else if (destination.value() == tile.value() && !merged(col, new_row)) {
+                flag = board.move(col, new_row, tile);
+                break;
+            } /* else {
+                continue;
+            } */
+        }
+        flags[col][new_row] = flag;
+        if (flag) {
+            score += board.tile(col, new_row).value();
+        }
+    }
+
+    /** This method tests whether a certain place has had merge action happened
+     *  before. If yes, then tileHandler method cannot move a tile to that place.*/
+    public boolean merged(int col, int row) {
+        return flags[col][row];
+    }
+
+    /** To reset the flags array to all false after every Tilt action.*/
+    public void mergedReset() {
+        for (int i = 0; i < board.size(); i++) {
+            for (int j = 0; j < board.size(); j++) {
+                flags[i][j] = false;
+            }
+        }
+    }
 
     @Override
     public String toString() {
