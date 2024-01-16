@@ -212,6 +212,7 @@ public class Model {
      *  Three scenarios:
      *  1. If the new place is null, then move the tile there.
      *  2. If the new place has the same value, and has never been merged before,
+     *     and (the tile below is null OR the tile below is itself),
      *     then move the tile there.
      *  3. Otherwise, we look at 1 row lower. (since the new place has been
      *     occupied, and there is no way to move the tile there.)*/
@@ -224,7 +225,8 @@ public class Model {
             if (destination == null) {
                 flag = board.move(col, new_row, tile);
                 break;
-            } else if (destination.value() == tile.value() && !merged(col, new_row)) {
+            } else if (destination.value() == tile.value() && !merged(col, new_row) &&
+                    (board.tile(col, new_row-1) == null || ((new_row - 1) == row))) {
                 flag = board.move(col, new_row, tile);
                 break;
             } /* else {
